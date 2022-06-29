@@ -1,6 +1,5 @@
 import os
 import re
-import time
 import requests
 import praw
 import configparser

@@ -1,5 +1,4 @@
 import os
-import re
 import concurrent.futures
 import argparse
 import cv2

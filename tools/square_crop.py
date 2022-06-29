@@ -1,7 +1,6 @@
 import os
 import concurrent.futures
 import argparse
-from collections import deque
 from PIL import Image
 
 
