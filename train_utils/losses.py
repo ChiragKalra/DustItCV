@@ -13,8 +13,8 @@ def binary_crossentropy_loss(label, prediction):
 def binary_focal_crossentropy_loss(gamma, epsilon=0.00001):
 	gamma = tf.constant(gamma)
 	def func(label, prediction):
-		E = tf.where(prediction > 0.5, tf.constant(-epsilon), tf.constant(epsilon))
-		cross_entropy = - label * log(prediction + E) * (1 - prediction) ** gamma - (1-label) * log(1-prediction + E) * prediction ** gamma
+		prediction = tf.clip_by_value(prediction, epsilon, 1-epsilon)
+		cross_entropy = - label * log(prediction) * (1 - prediction) ** gamma - (1-label) * log(1-prediction) * prediction ** gamma
 		return tf.math.reduce_mean(cross_entropy)
 	return func
 

@@ -1,24 +1,25 @@
-from PIL import Image
-import os.path
+import os
+import concurrent.futures
+import argparse
 from collections import deque
+from PIL import Image
 
 
-def crop_to_aspect(image, aspect, divisor=1, alignx=0.5, aligny=0.5):
+def crop_to_aspect(image, aspect, alignx=0.5, aligny=0.5):
 	"""Crops an image to a given aspect ratio.
 	Args:
-		aspect (float): The desired aspect ratio.
-		divisor (float): Optional divisor. Allows passing in (w, h) pair as the first two arguments.
+		aspect (float): The desired aspect ratio
 		alignx (float): Horizontal crop alignment from 0 (left) to 1 (right)
 		aligny (float): Vertical crop alignment from 0 (left) to 1 (right)
 	Returns:
 		Image: The cropped Image object.
 	"""
-	if image.width / image.height > aspect / divisor:
-		newwidth = int(image.height * (aspect / divisor))
+	if image.width / image.height > aspect:
+		newwidth = int(image.height * aspect)
 		newheight = image.height
 	else:
 		newwidth = image.width
-		newheight = int(image.width / (aspect / divisor))
+		newheight = int(image.width / aspect)
 	img = image.crop((
 			alignx * (image.width - newwidth),
 			aligny * (image.height - newheight),
@@ -28,27 +29,55 @@ def crop_to_aspect(image, aspect, divisor=1, alignx=0.5, aligny=0.5):
 	return img
 
 
-def cropTo(path, dest):
-	dirs = os.listdir(path)
-	q = deque(dirs)
-	count = 0
-	while q:
-		item = q.pop()
-		full_path = os.path.join(path, item)
-		dest_path = os.path.join(dest, item)
-		if os.path.isfile(full_path):
-			im = Image.open(full_path).convert('RGB')
-			f, e = os.path.splitext(dest_path)
-			cropped = crop_to_aspect(im, 1)
-			cropped.save(f + '.jpg')
-			count += 1
-			if count % 250 == 0:
-				print('done={0}/107000, {1}%'.format(count, count/1070))
+class ImageCropper:
+	def __init__(self, src, des):
+		self.src = src
+		self.des = des
+		self.in_count = 0
+		self.out_count = 0
+
+	def convert(self, root, filename=None, common=0.2):
+		if not filename:
+			root, filename = root
+		file = os.path.join(root, filename)
+		im = Image.open(file).convert('RGB')
+		self.in_count += 1
+		in_id, out_id = self.in_count, 0
+		aspect = im.width/im.height
+		if im.height > im.width:
+			factor, h_wise = im.height/im.width, True
 		else:
-			os.makedirs(dest_path)
-			for child in os.listdir(full_path):
-				this_path = os.path.join(item, child)
-				q.append(this_path)
+			factor, h_wise = aspect, False
+		count = int((factor-1)/(1-common)) + 1
+		for i in range(count):
+			w, h = (0.5, (i + 0.5)/count) if h_wise else ((i + 0.5)/count, 0.5)
+			out = crop_to_aspect(im, 1, w, h)
+			out = out.resize((224, 224), Image.Resampling.LANCZOS)
+			dire = self.des + root[len(self.src):]
+			if not os.path.isdir(dire):
+				os.makedirs(dire)
+			out.save(f'{dire}\\{in_id}_{out_id}.jpg', 'JPEG', quality=100, optimize=True, progressive=True)
+			out_id += 1
+		self.out_count += out_id
+
+	def file_gen(self):
+		for root, dirs, files in os.walk(self.src):
+			for file in files:
+				if file.endswith(('png', 'jpeg', 'jpg')):
+					yield root, file
+
+	def start(self):
+		with concurrent.futures.ThreadPoolExecutor() as ptolemy:
+			ptolemy.map(self.convert, self.file_gen())
+		print(f'In Count: {self.in_count}\nOut Count: {self.out_count}\n')
 
 
-cropTo(path='datasets\\og', dest='datasets\\cropped')
+if __name__ == '__main__':
+	parser = argparse.ArgumentParser(description='Image Cropper')
+	required_args = parser.add_argument_group('required arguments')
+	required_args.add_argument('-d', type=str, help="Input Directory", required=True)
+	required_args.add_argument('-o', type=str, help="Output Directory", required=True)
+	args = parser.parse_args()
+
+	scraper = ImageCropper(args.d, args.o)
+	scraper.start()

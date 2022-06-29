@@ -1,2 +1,5 @@
-tflite_model_maker
+tensorflow-gpu
+tflite_support
+pillow
+numpy
 tensorflow_datasets

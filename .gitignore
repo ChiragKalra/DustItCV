@@ -2,3 +2,5 @@
 .idea
 datasets
 venv
+/tools/conf.ini
+/models/
