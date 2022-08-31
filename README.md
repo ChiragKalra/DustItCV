@@ -1,7 +1,7 @@
-# Organizo CV
+# Dust It CV
 
 ## About
-Organizo CV contains the machine learnt model based on MobileNetV3 (and all scripts used to build it) for classifying images into common useless categories like (goodwishes, memes, screenshots) with an average precision of 95.5% at 90.2% recall. 
+Dust It CV contains the machine learnt model based on MobileNetV3 (and all scripts used to build it) for classifying images into common useless categories like (goodwishes, memes, screenshots) with an average precision of 95.5% at 90.2% recall. 
 
 However when deployed, user can set the prediction threshold to whatever they desire to adjust the balance between precision and recall. 
 
